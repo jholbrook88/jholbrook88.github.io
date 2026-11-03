@@ -9,7 +9,32 @@ const person = document.querySelector('#source-person');
 const result = document.querySelector('#result');
 const empty = document.querySelector('#empty');
 const status = document.querySelector('#status');
-function clearResult() { result.hidden = true; empty.hidden = false; status.textContent = ''; }
+let typingVersion = 0;
+let fullReply = '';
+const copyButton = document.querySelector('#copy');
+const skipButton = document.createElement('button');
+skipButton.type = 'button'; skipButton.className = 'button secondary'; skipButton.id = 'show-reply'; skipButton.textContent = 'Show full reply'; skipButton.hidden = true;
+copyButton.after(skipButton);
+const animationLabel = document.createElement('label'); animationLabel.className = 'animation-option';
+const animationToggle = document.createElement('input'); animationToggle.type = 'checkbox'; animationToggle.checked = true; animationToggle.id = 'animate-reply';
+animationLabel.append(animationToggle, document.createTextNode('Type out the sample reply'));
+document.querySelector('#preview').before(animationLabel);
+function stopTyping() { typingVersion++; document.querySelector('#draft').classList.remove('typing'); skipButton.hidden = true; }
+function clearResult() { stopTyping(); result.hidden = true; empty.hidden = false; status.textContent = ''; }
+function finishReply() { stopTyping(); document.querySelector('#draft').textContent = fullReply; copyButton.disabled = false; status.textContent = `Prepared ${examples[selected].business} example ready to review.`; }
+skipButton.addEventListener('click', finishReply);
+async function typeReply(text) {
+  stopTyping(); fullReply = text; const version = typingVersion;
+  const draft = document.querySelector('#draft'); draft.textContent = ''; copyButton.disabled = true;
+  if (!animationToggle.checked) { finishReply(); return; }
+  draft.classList.add('typing'); skipButton.hidden = false; status.textContent = 'Preparing the sample reply preview…';
+  for (let i = 0; i < text.length; i += 4) {
+    if (version !== typingVersion) return;
+    draft.textContent = text.slice(0, i + 4);
+    await new Promise(resolve => setTimeout(resolve, 14));
+  }
+  if (version === typingVersion) finishReply();
+}
 function loadExample() { const data = examples[selected]; message.textContent = data.message; person.textContent = `${data.name} · Fictional customer`; clearResult(); }
 document.querySelectorAll('[data-example]').forEach(button => button.addEventListener('click', () => { selected = button.dataset.example; document.querySelectorAll('[data-example]').forEach(item => item.setAttribute('aria-pressed', String(item === button))); loadExample(); }));
 document.querySelector('#tone').addEventListener('change', clearResult);
@@ -17,7 +42,7 @@ document.querySelector('#preview').addEventListener('click', () => {
   const data = examples[selected]; const summary = document.querySelector('#summary'); summary.replaceChildren();
   for (const [label, value] of [['Customer',data.name],['Business',data.business],['Request',data.service],['Timing',data.timing],['Details',data.details]]) { const dt = document.createElement('dt'); dt.textContent = label; const dd = document.createElement('dd'); dd.textContent = value; summary.append(dt,dd); }
   const questions = document.querySelector('#questions'); questions.replaceChildren(); data.questions.forEach(question => { const li = document.createElement('li'); li.textContent = question; questions.append(li); });
-  document.querySelector('#draft').textContent = data[document.querySelector('#tone').value]; result.hidden = false; empty.hidden = true; status.textContent = `Prepared ${data.business} example ready to review.`;
+  result.hidden = false; empty.hidden = true; typeReply(data[document.querySelector('#tone').value]);
 });
 document.querySelector('#copy').addEventListener('click', async () => { try { await navigator.clipboard.writeText(document.querySelector('#draft').textContent); status.textContent = 'Sample reply copied. Nothing has been sent.'; } catch { status.textContent = 'Copy is unavailable in this browser. You can select and copy the draft text.'; } });
 loadExample();
