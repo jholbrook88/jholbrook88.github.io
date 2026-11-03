@@ -17,7 +17,7 @@ document.querySelector('#estimate-form').addEventListener('submit', event => {
   const title = document.createElement('strong');
   title.textContent = 'Your sample inquiry is ready.';
   result.append(title);
-  for (const line of [`Name: ${data.get('name')}`, `Email: ${data.get('email')}`, `Service: ${data.get('service')}`, `Budget: ${data.get('budget')}`, `Your idea: ${data.get('message')}`, 'Preview only — nothing has been sent or saved.']) {
+  for (const line of [`Name: ${data.get('name')}`, `Email: ${data.get('email')}`, `Service: ${data.get('service')}`, data.has('frequency') ? `Service frequency: ${data.get('frequency')}` : `Budget: ${data.get('budget') || 'Not specified'}`, `Your idea: ${data.get('message')}`, 'Preview only — nothing has been sent or saved.']) {
     const p = document.createElement('p'); p.textContent = line; result.append(p);
   }
   result.hidden = false;
