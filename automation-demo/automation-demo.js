@@ -42,12 +42,11 @@ function replyFor(lead) {
  return lead.channel==='SMS preview'?`Hi ${first}, thanks for your ${lead.service.toLowerCase()} inquiry. ${next} We’ll review the details before confirming availability or pricing.`:`Hi ${first},\n\nThanks for getting in touch. Your request has been passed to our ${lead.team.toLowerCase()} team.\n\n${next}\n\nWe’ll review your request before confirming any price or appointment.\n\nThank you,\nThe ${lead.team} team`;
 }
 function beginResult() { $('#timeline').replaceChildren();$('#timeline').hidden=false;$('#empty').hidden=true;$('#reply-box').hidden=true;$('#reply').textContent='';$('#reply').classList.remove('typing');$('#copy').disabled=true;$('#status').textContent=''; }
-async function play(steps,reply,lead,finalStatus,state='complete') {
+async function play(steps,reply,lead,finalStatus) {
  const ticket=++animation;running=true;$('#run').disabled=true;$('#finish').hidden=false;setRunState('Running…','running');beginResult();
  let finished=false;
- function finish() { if(finished||ticket!==animation)return;finished=true;$('#timeline').replaceChildren();steps.forEach(([title,copy])=>step(title,copy));if(reply){$('#reply-box').hidden=false;$('#reply-recipient').textContent=`${lead.channel} · To: ${lead.email}`;$('#reply').textContent=reply;$('#reply').classList.remove('typing');$('#copy').disabled=false;}running=false;$('#run').disabled=false;$('#finish').hidden=true;setRunState(state==='duplicate'?'Duplicate prevented':'Workflow complete',state);$('#status').textContent=finalStatus;completeAnimation=null; }
+ function finish() { if(finished||ticket!==animation)return;finished=true;$('#timeline').replaceChildren();steps.forEach(([title,copy])=>step(title,copy));if(reply){$('#reply-box').hidden=false;$('#reply-recipient').textContent=`${lead.channel} · To: ${lead.email}`;$('#reply').textContent=reply;$('#reply').classList.remove('typing');$('#copy').disabled=false;}running=false;$('#run').disabled=false;$('#finish').hidden=true;setRunState('Workflow complete','complete');$('#status').textContent=finalStatus;completeAnimation=null; }
  completeAnimation=finish;
- if(!$('#animate').checked){finish();return;}
  const pause=ms=>new Promise(resolve=>setTimeout(resolve,ms));
  for(const [title,copy] of steps){await pause(380);if(finished||ticket!==animation)return;step(title,copy);}
  if(reply){$('#reply-box').hidden=false;$('#reply-recipient').textContent=`${lead.channel} · To: ${lead.email}`;$('#reply').classList.add('typing');for(let i=0;i<reply.length;i+=4){if(finished||ticket!==animation)return;$('#reply').textContent=reply.slice(0,i+4);await pause(14);}}
@@ -56,9 +55,11 @@ async function play(steps,reply,lead,finalStatus,state='complete') {
 form.addEventListener('submit',event=>{
  event.preventDefault();if(running)return;const data=fields();if(!data.customer||!data.message){$('#status').textContent='Add a sample customer name and message.';return;}data.email=data.email.toLowerCase();
  const existing=leads.find(lead=>lead.email===data.email&&lead.service===data.service);
- if(existing){play([['Inquiry received',`Checking ${data.email} and ${data.service.toLowerCase()}.`],['Existing record found',`${existing.id} already belongs to ${existing.customer} for this service.`],['Duplicate prevented','No additional reply, task, or lead was created. The existing record and deadline stay in place.']],null,null,'Duplicate prevented. Your follow-up queue has not changed.','duplicate');return;}
- const lead={...data,id:`DEMO-${String(sequence++).padStart(3,'0')}`,team:teams[data.service],createdAt:clock,dueAt:clock+hours[data.urgency]*3600000,contacted:false,contactedAt:null};leads.unshift(lead);render();
- play([['Inquiry checked & captured',`${lead.id} created. No matching email and service found.`],['Assigned to the right team',`${lead.service} → ${lead.team}. Original customer message included.`],['Follow-up scheduled',`${lead.urgency[0].toUpperCase()+lead.urgency.slice(1)} priority → ${hours[lead.urgency]}-hour deadline: ${formatDate(lead.dueAt)}.`],['Reply prepared for review',`${lead.channel}. The sample reply below is a draft; nothing is sent.`]],replyFor(lead),lead,`${lead.id} is ready in the queue. Advance the demo clock to see its follow-up become due.`);
+ const lead={...data,id:existing?existing.id:`DEMO-${String(sequence++).padStart(3,'0')}`,team:teams[data.service],createdAt:clock,dueAt:clock+hours[data.urgency]*3600000,contacted:false,contactedAt:null};
+ // Replaying a demo refreshes its sample task and always shows the full workflow.
+ if(existing)leads=leads.filter(item=>item!==existing);
+ leads.unshift(lead);render();
+ play([['Inquiry captured',`${lead.id}: ${lead.customer} — ${lead.service}.`],['Assigned to the right team',`${lead.service} → ${lead.team}. Original customer message included.`],['Follow-up scheduled',`${lead.urgency[0].toUpperCase()+lead.urgency.slice(1)} priority → ${hours[lead.urgency]}-hour deadline: ${formatDate(lead.dueAt)}.`],['Reply prepared for review',`${lead.channel}. The sample reply below is a draft; nothing is sent.`]],replyFor(lead),lead,`${lead.id} is ready in the queue. Run it again to try different details, or advance the demo clock to see its follow-up become due.`);
 });
 document.querySelectorAll('[data-sample]').forEach(button=>button.addEventListener('click',()=>{if(running)completeAnimation?.();const sample=samples[button.dataset.sample];Object.entries(sample).forEach(([key,value])=>{form.elements.namedItem(key).value=value;});document.querySelectorAll('[data-sample]').forEach(item=>item.setAttribute('aria-pressed',String(item===button)));updateRule();}));
 form.addEventListener('change',updateRule);
