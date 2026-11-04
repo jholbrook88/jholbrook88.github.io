@@ -11,3 +11,6 @@
 @media(max-width:760px){.interactive-grid{grid-template-columns:1fr}.lab-preview{min-height:0}.brand-name small{max-width:255px;font-size:9px}.mini-chart{height:135px}.interactive-info .text-link{margin-top:0}}
 
 .lab-preview-top strong small{display:block;font:500 7px/1.5 "DM Sans",Arial,sans-serif;letter-spacing:0;margin-top:5px}.lab-preview-top{align-items:start}
+
+/* Keep the established look, with a little less formality. */
+.intro .eyebrow,.services-section .eyebrow,.interactive-section .eyebrow,.approach>.eyebrow{letter-spacing:1.1px}.business-section-heading h2,.approach h2{letter-spacing:-1.2px}.service-card{border-radius:8px;background:#f6f7f1}.founder-note{background:#eef2e8;border:1px solid #d8e1d1;border-radius:8px;padding:27px}.founder-note h3{font-size:18px}.contact-card{border-radius:8px}.contact-card h3{font-weight:700}
